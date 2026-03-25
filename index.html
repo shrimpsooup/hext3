@@ -4,16 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HexT3</title>
-<!-- Inline SVG Favicon -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5' fill='%230c0c0c' stroke='%23454545' stroke-width='8'/><line x1='35' y1='35' x2='65' y2='65' stroke='%23e53e3e' stroke-width='10' stroke-linecap='round'/><line x1='65' y1='35' x2='35' y2='65' stroke='%23e53e3e' stroke-width='10' stroke-linecap='round'/></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<!-- PeerJS Library for WebRTC Peer-to-Peer Multiplayer -->
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
 
-/* ────────────────── MENU ────────────────── */
 #menu {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
@@ -73,14 +70,12 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
 .join-input:focus { border-color: #555; }
 .join-btn { padding: 14px 20px; width: auto; flex-shrink: 0; }
 
-/* ────────────────── GAME ────────────────── */
 #game { position: absolute; inset: 0; display: none; }
 #gc {
   display: block; cursor: crosshair;
   user-select: none; -webkit-user-select: none;
 }
 
-/* ── HUD SHARED ── */
 .hud {
   position: absolute;
   font-family: 'JetBrains Mono', monospace;
@@ -118,7 +113,6 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
   transition: background 0.15s, border-color 0.15s;
 }
 
-/* EVALUATION BAR */
 #eval-wrap {
   position: absolute; left: 20px; top: 50%;
   transform: translateY(-50%);
@@ -155,7 +149,6 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
   transition: color 0.3s;
 }
 
-/* Online HUD */
 #hud-online {
   top: 20px; left: 50%; transform: translateX(-50%);
   display: none; align-items: center; flex-direction: column; gap: 6px;
@@ -166,7 +159,16 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
 #hud-online strong:hover { color: #fff; }
 #role-disp { padding: 4px 8px; border: 1px solid #222; border-radius: 3px; background: #0e0e0e; }
 
-/* Bottom buttons */
+/* connection status indicator */
+#conn-status {
+  font-size: 8px; letter-spacing: 2px; color: #333;
+  padding: 3px 8px; border: 1px solid #1a1a1a; border-radius: 2px;
+  transition: color 0.3s, border-color 0.3s;
+}
+#conn-status.connected { color: #2a7a2a; border-color: #1a3a1a; }
+#conn-status.connecting { color: #7a6a1a; border-color: #3a3a1a; }
+#conn-status.disconnected { color: #7a1a1a; border-color: #3a1a1a; }
+
 #hud-recenter {
   position: absolute; bottom: 76px; left: 20px;
   background: transparent;
@@ -188,13 +190,11 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
 #btn-replay-toggle:hover { border-color: #484848; color: #777; }
 #btn-replay-toggle.hidden { display: none; }
 
-/* Minimap */
 #hud-minimap {
   position: absolute; bottom: 76px; right: 20px;
   border: 1px solid #1a1a1a; image-rendering: pixelated;
 }
 
-/* ── REPLAY BAR ── */
 #replay-bar {
   position: absolute; bottom: 0; left: 0; right: 0;
   height: 56px; background: #0e0e0e; border-top: 1px solid #1a1a1a;
@@ -254,7 +254,6 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
 .s-btn:hover { border-color: #484848; color: #777; }
 .s-btn.active { border-color: #555; color: #aaa; }
 
-/* ── OVERLAYS ── */
 .overlay {
   position: absolute; inset: 0;
   background: rgba(12,12,12,0.85);
@@ -284,7 +283,6 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
 }
 .o-btn:hover { border-color: #666; color: #bbb; }
 
-/* TOAST */
 #toast {
   position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
   background: #efefef; color: #0c0c0c;
@@ -329,6 +327,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
   <div class="hud" id="hud-online">
     <span>ROOM: <strong id="room-code-disp" title="Click to copy">ABCDE</strong></span>
     <span id="role-disp">YOU: X (HOST)</span>
+    <span id="conn-status" class="connecting">CONNECTING</span>
   </div>
 
   <div class="hud" id="hud-player">
@@ -341,7 +340,6 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
     <div class="pip" id="pip1"></div>
   </div>
 
-  <!-- EVALUATION BAR -->
   <div id="eval-wrap" title="Position Advantage / Evaluation">
     <div id="eval-score">0.0</div>
     <div id="eval-bar">
@@ -354,7 +352,6 @@ html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
   <button id="btn-replay-toggle" class="hidden">◎ Replay</button>
   <canvas id="hud-minimap" width="148" height="148"></canvas>
 
-  <!-- replay bar -->
   <div id="replay-bar" class="hidden">
     <button class="btn-step" id="btn-step-start" title="Jump to start">⏮</button>
     <button class="btn-step" id="btn-step-back"  title="Step back">◂</button>
@@ -415,7 +412,22 @@ const O_COL    = '#3182ce';
 const ZOOM_MIN = 0.22;
 const ZOOM_MAX = 4.5;
 const MM_W = 148, MM_H = 148;
-const PEER_PREFIX = 'hext3-'; 
+const PEER_PREFIX = 'hext3v2-';  // bumped prefix so old stale peers don't collide
+
+// FIX 1: Explicit ICE server config — default PeerJS cloud server is unreliable.
+// Using multiple public STUN servers for better NAT traversal.
+const PEER_CONFIG = {
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+    ]
+  },
+  debug: 0
+};
 
 const H_COS = [], H_SIN = [];
 for (let i = 0; i < 6; i++) {
@@ -454,6 +466,7 @@ let isHost     = false;
 let gameId     = null;
 let peer       = null;
 let conn       = null;
+let connReady  = false;   // FIX 2: track whether DataConnection is actually open
 
 /* ═══════════════════════════════════════════════════════════
    REPLAY STATE
@@ -498,6 +511,7 @@ const pip1     = document.getElementById('pip1');
 const hudOnline    = document.getElementById('hud-online');
 const roomCodeDisp = document.getElementById('room-code-disp');
 const roleDisp     = document.getElementById('role-disp');
+const connStatusEl = document.getElementById('conn-status');
 
 const evalScoreEl = document.getElementById('eval-score');
 const evalFillEl  = document.getElementById('eval-fill');
@@ -522,11 +536,13 @@ const btnJoin = document.getElementById('btn-join');
 /* ═══════════════════════════════════════════════════════════
    UI UTILS
 ═══════════════════════════════════════════════════════════ */
+let toastTimer = null;
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 function copyToClipboard(text) {
@@ -541,6 +557,13 @@ function legacyCopy(text) {
   const el = document.createElement('textarea');
   el.value = text; document.body.appendChild(el); el.select();
   document.execCommand('copy'); document.body.removeChild(el);
+}
+
+function setConnStatus(state) {
+  connStatusEl.className = '';
+  connStatusEl.classList.add(state);
+  const labels = { connected: 'CONNECTED', connecting: 'CONNECTING', disconnected: 'OFFLINE' };
+  connStatusEl.textContent = labels[state] || state.toUpperCase();
 }
 
 document.getElementById('room-code-disp').addEventListener('click', () => copyToClipboard(gameId));
@@ -615,7 +638,7 @@ function calculateEval() {
     }
   }
 
-  const tempoAdvantage = 2; 
+  const tempoAdvantage = 2;
   if (turn === 'X' && placesLeft > 0) scoreX += tempoAdvantage;
   else if (turn === 'O' && placesLeft > 0) scoreO += tempoAdvantage;
 
@@ -639,12 +662,12 @@ function updateEvalUI(score) {
     return;
   }
 
-  const sensitivity = 50; 
+  const sensitivity = 50;
   const winProbability = 100 / (1 + Math.exp(-score / sensitivity));
 
   evalFillEl.style.height = `${winProbability}%`;
   evalFillEl.style.backgroundColor = '#e53e3e';
-  
+
   const displayScore = score / 10;
   const sign = displayScore > 0 ? '+' : '';
   evalScoreEl.textContent = displayScore === 0 ? '0.0' : `${sign}${displayScore.toFixed(1)}`;
@@ -692,107 +715,182 @@ function rebuildStateFromHistory(newHistory) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PEERJS MULTIPLAYER
+   PEERJS MULTIPLAYER  — FIXED
 ═══════════════════════════════════════════════════════════ */
+
+// FIX 3: Single, clean peer factory
+function makePeer(id) {
+  return id ? new Peer(id, PEER_CONFIG) : new Peer(PEER_CONFIG);
+}
+
+// FIX 4: Centralised "safe send" — never throws even if conn is gone
+function safeSend(data) {
+  if (conn && connReady) {
+    try { conn.send(data); } catch(e) { console.warn('send failed', e); }
+  }
+}
+
 function hostOnline() {
   btnHost.disabled = true; btnHost.textContent = "CREATING ROOM...";
+
+  // Clean up any lingering peer first
+  if (peer) { try { peer.destroy(); } catch(e) {} peer = null; }
+
   gameId = Math.random().toString(36).substring(2, 7).toUpperCase();
-  peer = new Peer(PEER_PREFIX + gameId);
-  
-  peer.on('open', (id) => {
+  peer = makePeer(PEER_PREFIX + gameId);
+
+  peer.on('open', () => {
     btnHost.disabled = false; btnHost.textContent = "HOST ONLINE GAME";
     onlineMode = true; isHost = true; screen = 'game';
     gc.width = window.innerWidth; gc.height = window.innerHeight;
     menuEl.style.display = 'none'; gameEl.style.display = 'block';
-    waitingCode.textContent = gameId; waitingOver.classList.add('active');
+    waitingCode.textContent = gameId;
+    waitingOver.classList.add('active');
     recenter(); setupOnlineHUD(); calculateEval();
   });
 
-  peer.on('connection', (c) => {
-    if (conn) { c.close(); return; }
-    conn = c;
-    // Attach data/close handlers immediately, before 'open' fires on the connection
-    setupConnection();
+  peer.on('connection', (incoming) => {
+    // Reject a second connection if one already exists and is open
+    if (connReady) { incoming.close(); return; }
+
+    conn = incoming;
+    connReady = false;
+
     conn.on('open', () => {
-      waitingOver.classList.remove('active'); showToast("Player joined!");
-      // Small delay to ensure joiner's data handler is registered before we send
-      setTimeout(() => {
-        if (conn && conn.open) conn.send({ type: 'history', history });
-      }, 100);
+      connReady = true;
+      setConnStatus('connected');
+      waitingOver.classList.remove('active');
+      showToast("Player joined!");
+      // FIX 5: Send full history snapshot so joiner syncs regardless of length
+      safeSend({ type: 'sync', history: [...history] });
+    });
+
+    conn.on('data', handleIncomingData);
+
+    conn.on('close', () => {
+      connReady = false;
+      setConnStatus('disconnected');
+      showToast("Opponent disconnected.");
+    });
+
+    conn.on('error', (err) => {
+      connReady = false;
+      setConnStatus('disconnected');
+      console.error('conn error', err);
     });
   });
 
   peer.on('error', (err) => {
     btnHost.disabled = false; btnHost.textContent = "HOST ONLINE GAME";
-    showToast("Server Error: " + err.type); toMenu();
+    showToast("Error: " + (err.type || err));
+    cleanupOnline(); toMenu();
+  });
+
+  peer.on('disconnected', () => {
+    // Try to reconnect to the signalling server (doesn't affect WebRTC connection)
+    if (peer && !peer.destroyed) {
+      try { peer.reconnect(); } catch(e) {}
+    }
   });
 }
 
 function joinOnline() {
   const codeIn = document.getElementById('join-code').value.trim().toUpperCase();
   if (codeIn.length < 5) { showToast("Enter a valid 5-letter code"); return; }
+
   btnJoin.disabled = true; btnJoin.textContent = "JOINING...";
 
-  // Destroy any leftover peer
-  if (peer) { try { peer.destroy(); } catch(e) {} peer = null; }
+  // FIX 6: Wait for old peer to fully close before creating a new one
+  function doJoin() {
+    peer = makePeer(); // no ID for joiner
 
-  peer = new Peer();
-
-  peer.on('open', (myId) => {
-    conn = peer.connect(PEER_PREFIX + codeIn, { reliable: true });
-
-    // Attach ALL handlers before open fires — no race condition
-    setupConnection();
-
-    conn.on('open', () => {
+    let joinTimeout = setTimeout(() => {
+      showToast("Could not connect — check the code and try again.");
       btnJoin.disabled = false; btnJoin.textContent = "JOIN";
-      gameId = codeIn; onlineMode = true; isHost = false; screen = 'game';
-      gc.width = window.innerWidth; gc.height = window.innerHeight;
-      menuEl.style.display = 'none'; gameEl.style.display = 'block';
-      recenter(); setupOnlineHUD();
-      showToast("Connected to Host!");
+      cleanupOnline();
+    }, 12000);
+
+    peer.on('open', () => {
+      conn = peer.connect(PEER_PREFIX + codeIn, {
+        reliable: true,
+        serialization: 'json'   // explicit serialization avoids binary edge-cases
+      });
+      connReady = false;
+
+      conn.on('open', () => {
+        clearTimeout(joinTimeout);
+        connReady = true;
+        setConnStatus('connected');
+        gameId = codeIn; onlineMode = true; isHost = false; screen = 'game';
+        gc.width = window.innerWidth; gc.height = window.innerHeight;
+        menuEl.style.display = 'none'; gameEl.style.display = 'block';
+        recenter(); setupOnlineHUD();
+        showToast("Connected!");
+        // Joiner requests a sync so it gets current board state
+        safeSend({ type: 'request_sync' });
+      });
+
+      conn.on('data', handleIncomingData);
+
+      conn.on('close', () => {
+        connReady = false;
+        setConnStatus('disconnected');
+        showToast("Host disconnected.");
+      });
+
+      conn.on('error', (err) => {
+        clearTimeout(joinTimeout);
+        connReady = false;
+        btnJoin.disabled = false; btnJoin.textContent = "JOIN";
+        showToast("Connection error: " + (err.type || err));
+        cleanupOnline();
+      });
     });
 
-    conn.on('error', (err) => {
+    peer.on('error', (err) => {
+      clearTimeout(joinTimeout);
       btnJoin.disabled = false; btnJoin.textContent = "JOIN";
-      showToast("Connection failed: " + (err.type || err));
+      const msg = err.type === 'peer-unavailable'
+        ? "Room not found. Check the code."
+        : "Error: " + (err.type || err);
+      showToast(msg);
       cleanupOnline();
     });
+  }
 
-    // Timeout if open never fires
-    const joinTimeout = setTimeout(() => {
-      if (screen !== 'game') {
-        btnJoin.disabled = false; btnJoin.textContent = "JOIN";
-        showToast("Could not connect. Check the code and try again.");
-        cleanupOnline();
-      }
-    }, 10000);
-
-    conn.on('open', () => clearTimeout(joinTimeout));
-  });
-
-  peer.on('error', (err) => {
-    btnJoin.disabled = false; btnJoin.textContent = "JOIN";
-    const msg = err.type === 'peer-unavailable'
-      ? "Room not found. Check the code."
-      : "Connection error: " + err.type;
-    showToast(msg);
-    cleanupOnline();
-  });
+  // Cleanly destroy old peer before making a new one
+  if (peer && !peer.destroyed) {
+    peer.destroy();
+    // Give it a tick to finish teardown
+    setTimeout(doJoin, 150);
+  } else {
+    peer = null;
+    doJoin();
+  }
 }
 
-function setupConnection() {
-  conn.on('data', (data) => {
-    if (data.type === 'history') {
-      // Accept update if lengths differ OR it's a full sync on connect
-      if (data.history.length !== history.length) {
-        rebuildStateFromHistory(data.history);
-      }
-    } else if (data.type === 'reset') {
-      executeResetLocal(); showToast("Game Reset!");
-    }
-  });
-  conn.on('close', () => { showToast("Opponent disconnected."); toMenu(); });
+// FIX 7: Single data handler — covers all message types, no duplicate listeners
+function handleIncomingData(data) {
+  if (!data || !data.type) return;
+
+  if (data.type === 'sync') {
+    // Full state sync — always accept (replaces old length-check guard)
+    rebuildStateFromHistory(data.history || []);
+
+  } else if (data.type === 'move') {
+    // Incremental move sync
+    const { q, r, player } = data;
+    if (board.has(`${q},${r}`)) return; // already have it
+    const newHistory = [...history, { q, r, player }];
+    rebuildStateFromHistory(newHistory);
+
+  } else if (data.type === 'request_sync') {
+    // Peer is asking us to send full state
+    safeSend({ type: 'sync', history: [...history] });
+
+  } else if (data.type === 'reset') {
+    executeResetLocal(); showToast("Game Reset!");
+  }
 }
 
 function setupOnlineHUD() {
@@ -800,9 +898,11 @@ function setupOnlineHUD() {
   roomCodeDisp.textContent = gameId;
   roleDisp.textContent = isHost ? "YOU: X (HOST)" : "YOU: O (GUEST)";
   roleDisp.style.color = isHost ? X_COL : O_COL;
+  setConnStatus(connReady ? 'connected' : 'connecting');
 }
 
 function cleanupOnline() {
+  connReady = false;
   if (conn) { try { conn.close(); } catch(e) {} conn = null; }
   if (peer) { try { peer.destroy(); } catch(e) {} peer = null; }
   onlineMode = false;
@@ -817,6 +917,7 @@ function place(q, r) {
   if (over || replayMode) return;
   if (onlineMode) {
     if (waitingOver.classList.contains('active')) return;
+    if (!connReady) { showToast("Not connected yet!"); return; }
     const myRole = isHost ? 'X' : 'O';
     if (turn !== myRole) { showToast("Not your turn!"); return; }
   }
@@ -826,7 +927,12 @@ function place(q, r) {
   const newHistory = [...history, { q, r, player: turn }];
   rebuildStateFromHistory(newHistory);
 
-  if (onlineMode && conn && conn.open) conn.send({ type: 'history', history: newHistory });
+  // FIX 8: Send incremental move (faster) + full sync as fallback
+  if (onlineMode) {
+    safeSend({ type: 'move', q, r, player: history[history.length-1].player });
+    // Also send full sync so receiver can self-correct if a move was dropped
+    safeSend({ type: 'sync', history: [...history] });
+  }
 }
 
 function checkAndShowWin() {
@@ -848,7 +954,7 @@ function executeResetLocal() {
 
 function resetGame() {
   executeResetLocal();
-  if (onlineMode && conn && conn.open) conn.send({ type: 'reset' });
+  if (onlineMode) safeSend({ type: 'reset' });
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -909,7 +1015,7 @@ function replaySetStep(n) {
   board  = boardAtStep(replayStep);
   winSet = (replayStep === history.length && over) ? winSetAtStep(replayStep) : null;
   updateScrub();
-  
+
   const oldTurn = turn, oldLeft = placesLeft, oldOver = over;
   if (replayStep > 0) {
     const lastMove = history[replayStep-1];
