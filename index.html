@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HexT3</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#0c0c0c; }
+
+/* ────────────────── MENU ────────────────── */
+#menu {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#menu-bg { position: absolute; inset: 0; pointer-events: none; }
+.menu-content {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0;
+}
+.m-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: clamp(80px, 11vw, 130px);
+  letter-spacing: 14px; line-height: 1;
+  color: #efefef; text-indent: 14px;
+}
+.m-rule {
+  width: 1px; height: 48px;
+  background: linear-gradient(to bottom, transparent, #2a2a2a, transparent);
+  margin: 16px 0;
+}
+.m-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; letter-spacing: 5px;
+  color: #2e2e2e; text-transform: uppercase;
+  margin-bottom: 52px;
+}
+.m-modes { display: flex; flex-direction: column; gap: 10px; }
+.m-btn {
+  background: transparent;
+  border: 1px solid #252525; color: #555;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 4px;
+  padding: 14px 52px;
+  cursor: pointer; text-transform: uppercase;
+  transition: border-color 0.15s, color 0.15s;
+  position: relative; overflow: hidden;
+}
+.m-btn::before {
+  content: '';
+  position: absolute; inset: 0; background: #efefef;
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.2s ease; z-index: -1;
+}
+.m-btn:hover { border-color: #efefef; color: #0c0c0c; }
+.m-btn:hover::before { transform: scaleX(1); }
+
+/* ────────────────── GAME ────────────────── */
+#game { position: absolute; inset: 0; display: none; }
+#gc {
+  display: block; cursor: crosshair;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* ── HUD SHARED ── */
+.hud {
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  pointer-events: none; user-select: none;
+}
+
+#hud-coords {
+  top: 20px; left: 20px;
+  font-size: 9px; letter-spacing: 2.5px;
+  line-height: 2.1; color: #272727;
+}
+#hud-coords span { color: #454545; }
+
+#hud-player {
+  top: 20px; right: 20px;
+  display: flex; align-items: center; gap: 11px;
+}
+#player-sym {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 22px; letter-spacing: 1px; line-height: 1;
+  transition: color 0.2s;
+}
+#player-label {
+  font-size: 9px; letter-spacing: 3.5px;
+  text-transform: uppercase; transition: color 0.2s;
+}
+
+#hud-pips {
+  top: 54px; right: 20px;
+  display: flex; align-items: center; gap: 6px;
+}
+.pip {
+  width: 7px; height: 7px; border-radius: 50%;
+  border: 1px solid #333; background: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+/* bottom-left buttons */
+#hud-recenter {
+  position: absolute; bottom: 76px; left: 20px;
+  background: transparent;
+  border: 1px solid #1e1e1e; color: #303030;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 2.5px;
+  padding: 8px 13px;
+  cursor: pointer; text-transform: uppercase;
+  transition: border-color 0.15s, color 0.15s;
+  pointer-events: all;
+}
+#hud-recenter:hover { border-color: #484848; color: #777; }
+
+#btn-replay-toggle {
+  position: absolute; bottom: 76px; left: 130px;
+  background: transparent;
+  border: 1px solid #1e1e1e; color: #303030;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 2.5px;
+  padding: 8px 13px;
+  cursor: pointer; text-transform: uppercase;
+  transition: border-color 0.15s, color 0.15s;
+  pointer-events: all;
+}
+#btn-replay-toggle:hover { border-color: #484848; color: #777; }
+#btn-replay-toggle.hidden { display: none; }
+
+/* minimap lifted above bar */
+#hud-minimap {
+  position: absolute; bottom: 76px; right: 20px;
+  border: 1px solid #1a1a1a;
+  image-rendering: pixelated;
+}
+
+/* ── REPLAY BAR ── */
+#replay-bar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 56px;
+  background: #0e0e0e;
+  border-top: 1px solid #1a1a1a;
+  display: flex; align-items: center;
+  gap: 10px; padding: 0 16px;
+  pointer-events: all;
+  z-index: 10;
+}
+#replay-bar.hidden { display: none; }
+
+#btn-play-pause {
+  flex-shrink: 0; width: 30px; height: 30px;
+  background: transparent;
+  border: 1px solid #252525; color: #555;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+  font-size: 11px;
+}
+#btn-play-pause:hover { border-color: #555; color: #aaa; }
+
+.btn-step {
+  flex-shrink: 0; width: 26px; height: 26px;
+  background: transparent;
+  border: 1px solid #1e1e1e; color: #404040;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+  font-size: 10px;
+}
+.btn-step:hover { border-color: #484848; color: #777; }
+
+#scrub-wrap {
+  flex: 1;
+  display: flex; flex-direction: column;
+  gap: 5px;
+}
+#scrub-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 8px; letter-spacing: 2px; color: #252525;
+  pointer-events: none;
+}
+#scrub-move-label { color: #383838; letter-spacing: 1.5px; }
+#scrub-track {
+  position: relative; height: 3px;
+  background: #1a1a1a; cursor: pointer;
+  border-radius: 2px;
+}
+#scrub-fill {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  background: #2e2e2e;
+  border-radius: 2px;
+  pointer-events: none;
+}
+#scrub-thumb {
+  position: absolute; top: 50%;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #555; border: 1px solid #888;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* tick marks on the bar */
+#scrub-ticks {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+}
+
+#speed-wrap {
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+}
+#speed-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 2px; color: #252525;
+}
+#speed-btns { display: flex; gap: 4px; }
+.s-btn {
+  background: transparent;
+  border: 1px solid #1e1e1e; color: #383838;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 1px;
+  padding: 3px 6px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.s-btn:hover { border-color: #484848; color: #777; }
+.s-btn.active { border-color: #555; color: #aaa; }
+
+/* ── WIN OVERLAY ── */
+#win-overlay {
+  position: absolute; inset: 0;
+  background: rgba(12,12,12,0.85);
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px;
+  backdrop-filter: blur(3px);
+}
+#win-overlay.active { display: flex; }
+#win-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: clamp(54px, 8vw, 96px);
+  letter-spacing: 10px; text-indent: 10px; line-height: 1;
+}
+#win-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 4px;
+  color: #2a2a2a; text-transform: uppercase; margin-bottom: 36px;
+}
+.win-btn {
+  background: transparent;
+  border: 1px solid #222; color: #484848;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; letter-spacing: 3.5px;
+  padding: 12px 44px;
+  cursor: pointer; text-transform: uppercase;
+  transition: border-color 0.15s, color 0.15s;
+  margin: 3px 0;
+}
+.win-btn:hover { border-color: #666; color: #bbb; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ MENU ═══════════ -->
+<div id="menu">
+  <canvas id="menu-bg"></canvas>
+  <div class="menu-content">
+    <div class="m-title">HexT3</div>
+    <div class="m-rule"></div>
+    <div class="m-sub">Hexagonal · Infinite · Tic Tac Toe</div>
+    <div class="m-modes">
+      <button class="m-btn" id="btn-local">Local Mode</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ GAME ═══════════ -->
+<div id="game">
+  <canvas id="gc"></canvas>
+
+  <div class="hud" id="hud-coords">
+    Q &nbsp;<span id="cq">0</span><br>R &nbsp;<span id="cr">0</span>
+  </div>
+
+  <div class="hud" id="hud-player">
+    <span id="player-sym">X</span>
+    <span id="player-label">Turn</span>
+  </div>
+
+  <div class="hud" id="hud-pips">
+    <div class="pip" id="pip0"></div>
+    <div class="pip" id="pip1"></div>
+  </div>
+
+  <button id="hud-recenter">⊕ Recenter</button>
+  <button id="btn-replay-toggle" class="hidden">◎ Replay</button>
+  <canvas id="hud-minimap" width="148" height="148"></canvas>
+
+  <!-- replay bar -->
+  <div id="replay-bar" class="hidden">
+    <button class="btn-step" id="btn-step-start" title="Jump to start">⏮</button>
+    <button class="btn-step" id="btn-step-back"  title="Step back">◂</button>
+    <button id="btn-play-pause" title="Play / Pause">▶</button>
+    <button class="btn-step" id="btn-step-fwd"   title="Step forward">▸</button>
+    <button class="btn-step" id="btn-step-end"   title="Jump to end">⏭</button>
+
+    <div id="scrub-wrap">
+      <div id="scrub-meta">
+        <span>MOVE 0</span>
+        <span id="scrub-move-label">–</span>
+        <span id="scrub-end-label">0</span>
+      </div>
+      <div id="scrub-track">
+        <div id="scrub-fill"></div>
+        <canvas id="scrub-ticks" height="3"></canvas>
+        <div id="scrub-thumb"></div>
+      </div>
+    </div>
+
+    <div id="speed-wrap">
+      <div id="speed-label">SPEED</div>
+      <div id="speed-btns">
+        <button class="s-btn" data-spd="0.5">0.5×</button>
+        <button class="s-btn active" data-spd="1">1×</button>
+        <button class="s-btn" data-spd="2">2×</button>
+        <button class="s-btn" data-spd="4">4×</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="win-overlay">
+    <div id="win-title">X Wins</div>
+    <div id="win-sub">6 in a row</div>
+    <button class="win-btn" id="btn-again">Play Again</button>
+    <button class="win-btn" id="btn-replay">Watch Replay</button>
+    <button class="win-btn" id="btn-menu">Main Menu</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════════════ */
+const WIN_N           = 6;
+const PLACES_PER_TURN = 2;
+const HEX_R    = 38;
+const SQ3      = Math.sqrt(3);
+const X_COL    = '#e53e3e';
+const O_COL    = '#3182ce';
+const ZOOM_MIN = 0.22;
+const ZOOM_MAX = 4.5;
+const MM_W = 148, MM_H = 148;
+
+const H_COS = [], H_SIN = [];
+for (let i = 0; i < 6; i++) {
+  const a = Math.PI / 3 * i + Math.PI / 6;
+  H_COS.push(Math.cos(a)); H_SIN.push(Math.sin(a));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GAME STATE
+═══════════════════════════════════════════════════════════ */
+let history     = [];    // [{q, r, player}, ...]
+let board       = new Map();
+let turn        = 'X';
+let placesLeft  = 1;     // X gets 1 on opening move only
+let isFirstTurn = true;
+let over        = false;
+let winSet      = null;
+let hover       = null;
+let screen      = 'menu';
+
+/* ═══════════════════════════════════════════════════════════
+   REPLAY STATE
+═══════════════════════════════════════════════════════════ */
+let replayMode    = false;
+let replayStep    = 0;
+let replayPlaying = false;
+let replaySpeed   = 1;
+let replayTimer   = 0;
+let replayLastTS  = null;
+
+/* ═══════════════════════════════════════════════════════════
+   CAMERA
+═══════════════════════════════════════════════════════════ */
+let cam  = { cx: 0, cy: 0, zoom: 1 };
+let drag = null;
+
+/* ═══════════════════════════════════════════════════════════
+   DOM
+═══════════════════════════════════════════════════════════ */
+const menuEl   = document.getElementById('menu');
+const menuBgC  = document.getElementById('menu-bg');
+const mbCtx    = menuBgC.getContext('2d');
+const gameEl   = document.getElementById('game');
+const gc       = document.getElementById('gc');
+const gCtx     = gc.getContext('2d');
+const mm       = document.getElementById('hud-minimap');
+const mmCtx    = mm.getContext('2d');
+const coordQ   = document.getElementById('cq');
+const coordR   = document.getElementById('cr');
+const pSym     = document.getElementById('player-sym');
+const pLabel   = document.getElementById('player-label');
+const winOver  = document.getElementById('win-overlay');
+const winTitle = document.getElementById('win-title');
+const pip0     = document.getElementById('pip0');
+const pip1     = document.getElementById('pip1');
+
+const replayBar       = document.getElementById('replay-bar');
+const btnReplayToggle = document.getElementById('btn-replay-toggle');
+const btnPlayPause    = document.getElementById('btn-play-pause');
+const btnStepStart    = document.getElementById('btn-step-start');
+const btnStepBack     = document.getElementById('btn-step-back');
+const btnStepFwd      = document.getElementById('btn-step-fwd');
+const btnStepEnd      = document.getElementById('btn-step-end');
+const scrubTrack      = document.getElementById('scrub-track');
+const scrubFill       = document.getElementById('scrub-fill');
+const scrubThumb      = document.getElementById('scrub-thumb');
+const scrubTicksC     = document.getElementById('scrub-ticks');
+const scrubMoveLabel  = document.getElementById('scrub-move-label');
+const scrubEndLabel   = document.getElementById('scrub-end-label');
+
+/* ═══════════════════════════════════════════════════════════
+   HEX MATH
+═══════════════════════════════════════════════════════════ */
+function h2w(q, r) {
+  return { x: HEX_R * (SQ3 * q + SQ3 / 2 * r), y: HEX_R * 1.5 * r };
+}
+function w2h(wx, wy) {
+  const fq = (SQ3 / 3 * wx - wy / 3) / HEX_R;
+  const fr = wy * 2 / 3 / HEX_R;
+  const fs = -fq - fr;
+  let rq = Math.round(fq), rr = Math.round(fr), rs = Math.round(fs);
+  const dq = Math.abs(rq-fq), dr = Math.abs(rr-fr), ds = Math.abs(rs-fs);
+  if (dq > dr && dq > ds) rq = -rr - rs;
+  else if (dr > ds) rr = -rq - rs;
+  return { q: rq, r: rr };
+}
+function s2w(sx, sy) { return { x:(sx-cam.cx)/cam.zoom, y:(sy-cam.cy)/cam.zoom }; }
+function w2s(wx, wy) { return { x:wx*cam.zoom+cam.cx, y:wy*cam.zoom+cam.cy }; }
+function s2h(sx, sy) { const w = s2w(sx,sy); return w2h(w.x,w.y); }
+
+/* ═══════════════════════════════════════════════════════════
+   WIN CHECK
+═══════════════════════════════════════════════════════════ */
+const AXES = [
+  [[1,0],[-1,0]], [[0,1],[0,-1]], [[1,-1],[-1,1]]
+];
+function checkWinOnBoard(b, q, r, p) {
+  for (const [d1, d2] of AXES) {
+    const line = [{q,r}];
+    for (const [dq,dr] of [d1,d2]) {
+      for (let i = 1; i < WIN_N; i++) {
+        const nq = q+dq*i, nr = r+dr*i;
+        if (b.get(`${nq},${nr}`) === p) line.push({q:nq,r:nr});
+        else break;
+      }
+    }
+    if (line.length >= WIN_N) return line;
+  }
+  return null;
+}
+function checkWin(q, r, p) { return checkWinOnBoard(board, q, r, p); }
+
+/* ═══════════════════════════════════════════════════════════
+   BOARD RECONSTRUCTION
+═══════════════════════════════════════════════════════════ */
+function boardAtStep(n) {
+  const b = new Map();
+  for (let i = 0; i < n && i < history.length; i++) {
+    const { q, r, player } = history[i];
+    b.set(`${q},${r}`, player);
+  }
+  return b;
+}
+function winSetAtStep(n) {
+  if (n === 0) return null;
+  const b = boardAtStep(n);
+  const { q, r, player } = history[n-1];
+  return checkWinOnBoard(b, q, r, player);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GAME ACTIONS
+═══════════════════════════════════════════════════════════ */
+function place(q, r) {
+  if (over || replayMode) return;
+  const key = `${q},${r}`;
+  if (board.has(key)) return;
+
+  board.set(key, turn);
+  history.push({ q, r, player: turn });
+  placesLeft--;
+
+  const w = checkWin(q, r, turn);
+  if (w) {
+    over = true; winSet = w;
+    showWin(turn);
+    btnReplayToggle.classList.remove('hidden');
+    return;
+  }
+
+  if (placesLeft <= 0) {
+    isFirstTurn = false;
+    turn = turn === 'X' ? 'O' : 'X';
+    placesLeft = PLACES_PER_TURN;
+  }
+  updatePlayerHUD();
+}
+
+function resetGame() {
+  board.clear(); history = [];
+  turn = 'X'; placesLeft = 1; isFirstTurn = true;
+  over = false; winSet = null; hover = null;
+  winOver.classList.remove('active');
+  exitReplay();
+  btnReplayToggle.classList.add('hidden');
+  updatePlayerHUD();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CAMERA
+═══════════════════════════════════════════════════════════ */
+function recenter() {
+  cam.cx = gc.width / 2; cam.cy = gc.height / 2; cam.zoom = 1;
+}
+function zoomAt(sx, sy, factor) {
+  const wx = (sx-cam.cx)/cam.zoom, wy = (sy-cam.cy)/cam.zoom;
+  cam.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, cam.zoom * factor));
+  cam.cx = sx - wx*cam.zoom; cam.cy = sy - wy*cam.zoom;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HUD
+═══════════════════════════════════════════════════════════ */
+function updatePlayerHUD() {
+  if (replayMode) {
+    pSym.textContent  = '◎';
+    pSym.style.color  = '#333';
+    pLabel.textContent = 'Replay';
+    pLabel.style.color = '#2a2a2a';
+    pip0.style.background = 'transparent'; pip0.style.borderColor = '#1e1e1e';
+    pip1.style.background = 'transparent'; pip1.style.borderColor = '#1e1e1e';
+    return;
+  }
+  const col   = turn === 'X' ? X_COL : O_COL;
+  pSym.textContent   = turn;
+  pSym.style.color   = col;
+  pLabel.textContent = 'Turn';
+  pLabel.style.color = '#333';
+
+  const total = isFirstTurn ? 1 : PLACES_PER_TURN;
+  [pip0, pip1].forEach((pip, i) => {
+    const active = i < total;
+    const filled = i < placesLeft && active;
+    pip.style.background  = filled ? col : 'transparent';
+    pip.style.borderColor = filled ? col : (active ? '#2a2a2a' : '#181818');
+  });
+}
+
+function showWin(p) {
+  const col = p === 'X' ? X_COL : O_COL;
+  winTitle.textContent = `${p} Wins`;
+  winTitle.style.color = col;
+  winOver.classList.add('active');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REPLAY
+═══════════════════════════════════════════════════════════ */
+function enterReplay() {
+  replayMode    = true;
+  replayStep    = history.length; // start at end by default
+  replayPlaying = false;
+  replayTimer   = 0;
+  replayLastTS  = null;
+  replayBar.classList.remove('hidden');
+  btnPlayPause.textContent = '▶';
+  btnReplayToggle.textContent = '◎ Live';
+  btnReplayToggle.classList.remove('hidden');
+  updatePlayerHUD();
+  drawScrubTicks();
+  updateScrub();
+}
+
+function exitReplay() {
+  if (!replayMode) return;
+  replayMode    = false;
+  replayPlaying = false;
+  replayBar.classList.add('hidden');
+  btnReplayToggle.textContent = '◎ Replay';
+  board = new Map(); // restore live board
+  for (const { q, r, player } of history) board.set(`${q},${r}`, player);
+  if (over) winOver.classList.add('active');
+  updatePlayerHUD();
+}
+
+function replaySetStep(n) {
+  replayStep = Math.max(0, Math.min(history.length, n));
+  board  = boardAtStep(replayStep);
+  winSet = (replayStep === history.length && over)
+           ? winSetAtStep(replayStep) : null;
+  updateScrub();
+}
+
+function drawScrubTicks() {
+  const rect = scrubTrack.getBoundingClientRect();
+  const W = rect.width || scrubTrack.offsetWidth || 300;
+  scrubTicksC.width  = W;
+  scrubTicksC.height = 3;
+  const tc = scrubTicksC.getContext('2d');
+  tc.clearRect(0, 0, W, 3);
+  const total = history.length;
+  if (total === 0) return;
+  for (let i = 0; i < total; i++) {
+    const { player } = history[i];
+    const x = (i / total) * W;
+    tc.fillStyle = player === 'X' ? X_COL + '55' : O_COL + '55';
+    tc.fillRect(x, 0, Math.max(1, W / total - 0.5), 3);
+  }
+}
+
+function updateScrub() {
+  const total = history.length;
+  const pct   = total > 0 ? replayStep / total : 0;
+  const pctS  = (pct * 100).toFixed(2) + '%';
+  scrubFill.style.width = pctS;
+  scrubThumb.style.left = pctS;
+  scrubEndLabel.textContent = total;
+
+  if (replayStep === 0) {
+    scrubMoveLabel.textContent = 'START';
+    scrubMoveLabel.style.color = '#383838';
+  } else {
+    const { q, r, player } = history[replayStep - 1];
+    const col = player === 'X' ? X_COL : O_COL;
+    scrubMoveLabel.textContent = `${player}  Q${q} R${r}`;
+    scrubMoveLabel.style.color = col;
+  }
+}
+
+function replayTick(ts) {
+  if (!replayPlaying || !replayMode) return;
+  if (replayLastTS === null) { replayLastTS = ts; return; }
+  const dt = ts - replayLastTS;
+  replayLastTS = ts;
+  replayTimer += dt;
+  const msPerStep = 1000 / replaySpeed;
+  while (replayTimer >= msPerStep) {
+    replayTimer -= msPerStep;
+    if (replayStep < history.length) {
+      replaySetStep(replayStep + 1);
+    } else {
+      replayPlaying = false;
+      btnPlayPause.textContent = '▶';
+      replayLastTS = null;
+      break;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DRAW HELPERS
+═══════════════════════════════════════════════════════════ */
+function hexPath(c, cx, cy, r) {
+  c.moveTo(cx + r*H_COS[0], cy + r*H_SIN[0]);
+  for (let i = 1; i < 6; i++) c.lineTo(cx + r*H_COS[i], cy + r*H_SIN[i]);
+  c.closePath();
+}
+function fillHex(c, cx, cy, r, fill)  { c.beginPath(); hexPath(c,cx,cy,r); c.fillStyle=fill; c.fill(); }
+function strokeHex(c, cx, cy, r, stroke, lw) { c.beginPath(); hexPath(c,cx,cy,r); c.strokeStyle=stroke; c.lineWidth=lw; c.stroke(); }
+function drawX(c, cx, cy, r, col) {
+  const d = r*0.30;
+  c.strokeStyle=col; c.lineWidth=Math.max(1.8,r*0.09); c.lineCap='round';
+  c.beginPath();
+  c.moveTo(cx-d,cy-d); c.lineTo(cx+d,cy+d);
+  c.moveTo(cx+d,cy-d); c.lineTo(cx-d,cy+d);
+  c.stroke();
+}
+function drawO(c, cx, cy, r, col) {
+  c.strokeStyle=col; c.lineWidth=Math.max(1.8,r*0.09); c.lineCap='butt';
+  c.beginPath(); c.arc(cx,cy,r*0.30,0,Math.PI*2); c.stroke();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VISIBLE RANGE
+═══════════════════════════════════════════════════════════ */
+function visRange() {
+  const W = gc.width, H = gc.height;
+  const pts = [[0,0],[W,0],[0,H],[W,H]].map(([sx,sy]) => {
+    const w = s2w(sx,sy);
+    return { q:(SQ3/3*w.x - w.y/3)/HEX_R, r:w.y*2/3/HEX_R };
+  });
+  return {
+    qlo: Math.floor(Math.min(...pts.map(p=>p.q)))-3,
+    qhi: Math.ceil(Math.max(...pts.map(p=>p.q)))+3,
+    rlo: Math.floor(Math.min(...pts.map(p=>p.r)))-3,
+    rhi: Math.ceil(Math.max(...pts.map(p=>p.r)))+3,
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER GAME
+═══════════════════════════════════════════════════════════ */
+function renderGame() {
+  const W = gc.width, H = gc.height;
+  const c = gCtx;
+  const hr = HEX_R * cam.zoom;
+
+  c.fillStyle = '#0c0c0c';
+  c.fillRect(0,0,W,H);
+
+  const { qlo, qhi, rlo, rhi } = visRange();
+  { const s = w2s(0,0); fillHex(c,s.x,s.y,hr-0.5,'#131313'); }
+
+  // Grid
+  c.beginPath();
+  for (let q = qlo; q <= qhi; q++) {
+    for (let r = rlo; r <= rhi; r++) {
+      const ww = h2w(q,r), ss = w2s(ww.x,ww.y);
+      if (ss.x<-hr*2||ss.x>W+hr*2||ss.y<-hr*2||ss.y>H+hr*2) continue;
+      hexPath(c, ss.x, ss.y, hr-0.5);
+    }
+  }
+  c.strokeStyle = '#1c1c1c';
+  c.lineWidth = Math.max(0.35, cam.zoom*0.65);
+  c.stroke();
+
+  // Highlight cell for current replay step
+  const replayHL = replayMode && replayStep > 0 ? history[replayStep-1] : null;
+
+  // Pieces
+  c.lineCap = 'round';
+  for (const [key, p] of board) {
+    const [q,r] = key.split(',').map(Number);
+    const ww = h2w(q,r), ss = w2s(ww.x,ww.y);
+    if (ss.x<-hr*2||ss.x>W+hr*2||ss.y<-hr*2||ss.y>H+hr*2) continue;
+
+    const col  = p === 'X' ? X_COL : O_COL;
+    const isW  = winSet && winSet.some(cell => cell.q===q && cell.r===r);
+    const isHL = replayHL && replayHL.q===q && replayHL.r===r;
+
+    fillHex(c, ss.x, ss.y, hr-0.5, col + (isW ? '28' : isHL ? '1e' : '0f'));
+
+    if (isW || isHL) {
+      c.save();
+      c.shadowBlur  = hr * (isW ? 0.8 : 0.5);
+      c.shadowColor = col + (isW ? 'aa' : '66');
+    }
+    strokeHex(c, ss.x, ss.y, hr-0.5,
+      (isW||isHL) ? col : col+'44',
+      (isW||isHL) ? Math.max(1.2,hr*0.055) : Math.max(0.5,hr*0.025));
+    if (isW || isHL) c.restore();
+
+    if (isW) { c.save(); c.shadowBlur=hr*0.6; c.shadowColor=col+'88'; }
+    if (p==='X') drawX(c,ss.x,ss.y,hr,col);
+    else          drawO(c,ss.x,ss.y,hr,col);
+    if (isW) c.restore();
+  }
+
+  // Hover ghost
+  if (hover && !over && !replayMode) {
+    const key = `${hover.q},${hover.r}`;
+    if (!board.has(key)) {
+      const ww = h2w(hover.q,hover.r), ss = w2s(ww.x,ww.y);
+      const col = turn==='X' ? X_COL : O_COL;
+      fillHex(c,ss.x,ss.y,hr-0.5,col+'14');
+      strokeHex(c,ss.x,ss.y,hr-0.5,col+'70',Math.max(0.8,hr*0.045));
+      c.globalAlpha = 0.28;
+      if (turn==='X') drawX(c,ss.x,ss.y,hr,col);
+      else            drawO(c,ss.x,ss.y,hr,col);
+      c.globalAlpha = 1;
+    }
+  }
+
+  const ctr = s2h(W/2, H/2);
+  coordQ.textContent = ctr.q;
+  coordR.textContent = ctr.r;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER MINIMAP
+═══════════════════════════════════════════════════════════ */
+function renderMinimap() {
+  const W = gc.width, H = gc.height;
+  const c = mmCtx;
+  c.fillStyle = '#0c0c0c';
+  c.fillRect(0,0,MM_W,MM_H);
+
+  const vpCorners = [[0,0],[W,0],[0,H],[W,H]].map(([x,y])=>s2w(x,y));
+  let wxMin=Math.min(...vpCorners.map(p=>p.x)), wxMax=Math.max(...vpCorners.map(p=>p.x));
+  let wyMin=Math.min(...vpCorners.map(p=>p.y)), wyMax=Math.max(...vpCorners.map(p=>p.y));
+
+  for (const key of board.keys()) {
+    const [q,r] = key.split(',').map(Number);
+    const ww = h2w(q,r);
+    wxMin=Math.min(wxMin,ww.x-HEX_R*2); wxMax=Math.max(wxMax,ww.x+HEX_R*2);
+    wyMin=Math.min(wyMin,ww.y-HEX_R*2); wyMax=Math.max(wyMax,ww.y+HEX_R*2);
+  }
+
+  const pad = Math.max(HEX_R*5,(wxMax-wxMin)*0.18,(wyMax-wyMin)*0.18);
+  wxMin-=pad; wxMax+=pad; wyMin-=pad; wyMax+=pad;
+  const wSpan=wxMax-wxMin, hSpan=wyMax-wyMin;
+  const sc = Math.min(MM_W/wSpan,MM_H/hSpan);
+  const offX=(MM_W-wSpan*sc)/2-wxMin*sc, offY=(MM_H-hSpan*sc)/2-wyMin*sc;
+  const mm2 = (wx,wy) => ({x:wx*sc+offX, y:wy*sc+offY});
+
+  const ori = mm2(0,0);
+  c.fillStyle='#252525'; c.beginPath(); c.arc(ori.x,ori.y,2.5,0,Math.PI*2); c.fill();
+
+  const dotR = Math.max(2,HEX_R*sc*0.65);
+  const replayHL = replayMode && replayStep>0 ? history[replayStep-1] : null;
+  for (const [key,p] of board) {
+    const [q,r]=key.split(',').map(Number);
+    const ww=h2w(q,r), m=mm2(ww.x,ww.y);
+    const isHL = replayHL && replayHL.q===q && replayHL.r===r;
+    c.fillStyle = p==='X' ? X_COL : O_COL;
+    c.globalAlpha = isHL ? 1 : 0.65;
+    c.beginPath(); c.arc(m.x,m.y, isHL ? dotR*1.5 : dotR, 0,Math.PI*2); c.fill();
+  }
+  c.globalAlpha = 1;
+
+  const vp = vpCorners.map(p=>mm2(p.x,p.y));
+  c.strokeStyle='rgba(255,255,255,0.22)'; c.lineWidth=1;
+  c.beginPath();
+  c.moveTo(vp[0].x,vp[0].y); c.lineTo(vp[1].x,vp[1].y);
+  c.lineTo(vp[3].x,vp[3].y); c.lineTo(vp[2].x,vp[2].y);
+  c.closePath(); c.stroke();
+
+  c.strokeStyle='#1a1a1a'; c.lineWidth=1; c.strokeRect(0,0,MM_W,MM_H);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MENU BG
+═══════════════════════════════════════════════════════════ */
+function renderMenuBg() {
+  const W = menuBgC.width = window.innerWidth;
+  const H = menuBgC.height = window.innerHeight;
+  mbCtx.clearRect(0,0,W,H);
+  const r=44, ox=W/2, oy=H/2;
+  const qlo=-Math.ceil(W/(SQ3*r))-2, qhi=Math.ceil(W/(SQ3*r))+2;
+  const rlo=-Math.ceil(H/(1.5*r))-2, rhi=Math.ceil(H/(1.5*r))+2;
+  mbCtx.strokeStyle='rgba(255,255,255,0.045)'; mbCtx.lineWidth=1; mbCtx.beginPath();
+  for (let q=qlo;q<=qhi;q++)
+    for (let rv=rlo;rv<=rhi;rv++)
+      hexPath(mbCtx, ox+r*(SQ3*q+SQ3/2*rv), oy+r*1.5*rv, r-0.5);
+  mbCtx.stroke();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN LOOP
+═══════════════════════════════════════════════════════════ */
+function loop(ts) {
+  if (screen === 'game') {
+    if (replayMode && replayPlaying) replayTick(ts);
+    renderGame();
+    renderMinimap();
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INPUT
+═══════════════════════════════════════════════════════════ */
+gc.addEventListener('contextmenu', e => e.preventDefault());
+
+gc.addEventListener('mousedown', e => {
+  if (e.button === 1) e.preventDefault();
+  drag = { sx:e.clientX, sy:e.clientY, cx0:cam.cx, cy0:cam.cy, moved:false, btn:e.button };
+});
+
+window.addEventListener('mousemove', e => {
+  if (!drag) { if (screen==='game') hover=s2h(e.clientX,e.clientY); return; }
+  const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
+  if (!drag.moved && Math.hypot(dx,dy)>4) drag.moved=true;
+  if (drag.moved) { cam.cx=drag.cx0+dx; cam.cy=drag.cy0+dy; hover=null; }
+});
+
+window.addEventListener('mouseup', e => {
+  if (!drag) return;
+  if (!drag.moved && drag.btn===0 && !replayMode)
+    place(s2h(e.clientX,e.clientY).q, s2h(e.clientX,e.clientY).r);
+  drag=null;
+});
+
+gc.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (e.ctrlKey) {
+    zoomAt(e.clientX,e.clientY, e.deltaY>0?0.91:1.10);
+  } else if (Math.abs(e.deltaX)>0||e.deltaMode===0) {
+    cam.cx-=e.deltaX; cam.cy-=e.deltaY;
+  } else {
+    zoomAt(e.clientX,e.clientY, e.deltaY>0?0.88:1.14);
+  }
+}, { passive:false });
+
+gc.addEventListener('mouseleave', ()=>{ hover=null; });
+
+/* ── SCRUB ── */
+let scrubbing = false;
+function scrubAt(e) {
+  const rect = scrubTrack.getBoundingClientRect();
+  const pct  = Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  replaySetStep(Math.round(pct * history.length));
+}
+scrubTrack.addEventListener('mousedown', e => { e.stopPropagation(); scrubbing=true; scrubAt(e); });
+window.addEventListener('mousemove',  e => { if (scrubbing) scrubAt(e); });
+window.addEventListener('mouseup',    ()  => { scrubbing=false; });
+
+/* ── REPLAY BUTTON HANDLERS ── */
+btnPlayPause.addEventListener('click', () => {
+  replayPlaying = !replayPlaying;
+  btnPlayPause.textContent = replayPlaying ? '⏸' : '▶';
+  if (replayPlaying) {
+    replayLastTS=null; replayTimer=0;
+    if (replayStep >= history.length) replaySetStep(0); // restart from beginning
+  }
+});
+btnStepStart.addEventListener('click', () => { stopPlay(); replaySetStep(0); });
+btnStepEnd.addEventListener('click',   () => { stopPlay(); replaySetStep(history.length); });
+btnStepBack.addEventListener('click',  () => { stopPlay(); replaySetStep(replayStep-1); });
+btnStepFwd.addEventListener('click',   () => { stopPlay(); replaySetStep(replayStep+1); });
+
+function stopPlay() { replayPlaying=false; btnPlayPause.textContent='▶'; }
+
+document.querySelectorAll('.s-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    replaySpeed = parseFloat(btn.dataset.spd);
+    document.querySelectorAll('.s-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+btnReplayToggle.addEventListener('click', () => {
+  if (replayMode) exitReplay(); else enterReplay();
+});
+
+/* ── KEYBOARD ── */
+window.addEventListener('keydown', e => {
+  if (screen !== 'game' || !replayMode) return;
+  if (e.code==='Space')      { e.preventDefault(); btnPlayPause.click(); }
+  if (e.code==='ArrowLeft')  { e.preventDefault(); btnStepBack.click(); }
+  if (e.code==='ArrowRight') { e.preventDefault(); btnStepFwd.click(); }
+  if (e.code==='Home')       { e.preventDefault(); btnStepStart.click(); }
+  if (e.code==='End')        { e.preventDefault(); btnStepEnd.click(); }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN TRANSITIONS
+═══════════════════════════════════════════════════════════ */
+function startLocal() {
+  resetGame();
+  gc.width  = window.innerWidth;
+  gc.height = window.innerHeight;
+  recenter(); updatePlayerHUD();
+  screen = 'game';
+  menuEl.style.display = 'none';
+  gameEl.style.display = 'block';
+}
+
+function toMenu() {
+  screen = 'menu';
+  gameEl.style.display = 'none';
+  menuEl.style.display = 'flex';
+}
+
+document.getElementById('btn-local').addEventListener('click', startLocal);
+document.getElementById('btn-again').addEventListener('click', () => { resetGame(); recenter(); });
+document.getElementById('btn-menu').addEventListener('click', toMenu);
+document.getElementById('hud-recenter').addEventListener('click', recenter);
+document.getElementById('btn-replay').addEventListener('click', () => {
+  winOver.classList.remove('active');
+  enterReplay();
+  replaySetStep(0); // start replay from the beginning
+});
+
+window.addEventListener('resize', () => {
+  if (screen==='game') { gc.width=window.innerWidth; gc.height=window.innerHeight; }
+  renderMenuBg();
+  if (replayMode) drawScrubTicks();
+});
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+renderMenuBg();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
