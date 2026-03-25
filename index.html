@@ -704,6 +704,7 @@ function hostOnline() {
   peer.on('open', (id) => {
     btnHost.disabled = false; btnHost.textContent = "HOST ONLINE GAME";
     onlineMode = true; isHost = true; screen = 'game';
+    gc.width = window.innerWidth; gc.height = window.innerHeight;
     menuEl.style.display = 'none'; gameEl.style.display = 'block';
     waitingCode.textContent = gameId; waitingOver.classList.add('active');
     recenter(); setupOnlineHUD(); calculateEval();
@@ -733,6 +734,7 @@ function joinOnline() {
     conn.on('open', () => {
       btnJoin.disabled = false; btnJoin.textContent = "JOIN";
       gameId = codeIn; onlineMode = true; isHost = false; screen = 'game';
+      gc.width = window.innerWidth; gc.height = window.innerHeight;
       menuEl.style.display = 'none'; gameEl.style.display = 'block';
       recenter(); setupOnlineHUD(); setupConnection(); calculateEval();
       showToast("Connected to Host!");
